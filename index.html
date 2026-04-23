@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>১৬ গুটি - AI এবং আসল কাঠের বোর্ড</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
+        
+        body { 
+            background: #3e2723; 
+            background-image: repeating-linear-gradient(45deg, #3e2723 25%, #4e342e 25%, #4e342e 50%, #3e2723 50%, #3e2723 75%, #4e342e 75%, #4e342e 100%);
+            background-size: 40px 40px;
+            color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 10px; overflow-x: hidden; 
+        }
+
+        /* Top Controls */
+        .game-controls { background: #f5f5f5; padding: 10px; border-radius: 8px; border: 2px solid #8d6e63; margin-bottom: 10px; width: 100%; max-width: 380px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
+        .mode-btn { background: #d7ccc8; border: 2px solid #5d4037; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; color: #3e2723; transition: 0.3s; }
+        .mode-btn.active { background: #4caf50; color: white; border-color: #2e7d32; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+
+        /* Instruction Banner */
+        .instruction-banner { background: rgba(255, 243, 224, 0.95); border: 2px solid #8d6e63; border-radius: 8px; padding: 10px; margin-bottom: 5px; width: 100%; max-width: 380px; text-align: center; font-size: 0.9rem; color: #3e2723; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 8px; }
+        .instruction-banner span { color: #2e7d32; font-weight: bold; }
+        .instruction-banner button { background: #5d4037; color: #fff; border: none; padding: 6px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; align-self: center; }
+
+        /* Player Cards */
+        .player-card { background: #f5f5f5; border: 3px solid #8d6e63; border-radius: 10px; padding: 12px; width: 100%; max-width: 380px; text-align: center; margin: 5px 0; transition: all 0.3s ease; box-shadow: 0 5px 10px rgba(0,0,0,0.6); position: relative; }
+        .player-card.active-turn { background: #4caf50; border-color: #2e7d32; color: #fff; box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); }
+        .player-card.action-done { cursor: pointer; animation: pulseCard 1.5s infinite; }
+
+        @keyframes pulseCard { 0% { transform: scale(1); } 50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(76, 175, 80, 1); } 100% { transform: scale(1); } }
+        .rotated { transform: rotate(180deg); }
+        
+        .card-header { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
+        .instruction-text { font-size: 0.85rem; margin-top: 5px; font-weight: bold; min-height: 18px; }
+
+        .rotate-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); padding: 5px; border-radius: 6px; margin-bottom: 5px; font-size: 0.8rem; }
+        .btn-rotate { background: #fff; border: 1px solid #333; color: #333; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+
+        .captured-area { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; min-height: 18px; margin-top: 5px; padding: 4px; background: rgba(0,0,0,0.1); border-radius: 4px; }
+        .eaten-piece { width: 12px; height: 12px; border-radius: 50%; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .eaten-white { background: #e0ccaa; border: 1px solid #8d6e63; }
+        .eaten-black { background: #2c2c2c; border: 1px solid #000; }
+
+        canvas { background: #d7ccc8; border: 6px solid #5d4037; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0,0,0,0.3); width: 100%; max-width: 380px; height: auto; touch-action: none; margin: 5px 0; }
+    </style>
+</head>
+<body>
+
+    <div class="game-controls">
+        <button id="btn-friend" class="mode-btn active" onclick="setMode('friend')">বন্ধুর সাথে</button>
+        <button id="btn-ai" class="mode-btn" onclick="setMode('ai')">কম্পিউটারের সাথে</button>
+    </div>
+
+    <div id="instruction-banner" class="instruction-banner">
+        <strong>নিয়ম:</strong> চাল দেওয়া শেষ হলে <span>সবুজ আইডি কার্ডে</span> ক্লিক করুন।
+        <button onclick="hideInstruction()">বুঝতে পেরেছি</button>
+    </div>
+
+    <div id="p1-card" class="player-card" onclick="attemptEndTurn(1)">
+        <div class="rotate-bar">
+            <span>কার্ডটি ঘোরাতে ক্লিক করুন ➔</span>
+            <button class="btn-rotate" onclick="toggleRotation(event)">🔄 Rotate</button>
+        </div>
+        <div class="card-header">সাদা গুটি (Player 1)</div>
+        <div id="p1-captured" class="captured-area"></div>
+        <div id="p1-msg" class="instruction-text">আপনার চাল দিন...</div>
+    </div>
+
+    <canvas id="gameBoard" width="360" height="540"></canvas>
+
+    <div id="p2-card" class="player-card" onclick="attemptEndTurn(2)">
+        <div class="card-header" id="p2-name">কালো গুটি (Player 2)</div>
+        <div id="p2-captured" class="captured-area"></div>
+        <div id="p2-msg" class="instruction-text"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameBoard');
+        const ctx = canvas.getContext('2d');
+        
+        let isAIMode = false;
+        let nodes = [];
+        let currentPlayer = 1; // 1 = White, 2 = Black
+        let selectedNode = null;
+        let turnState = { hasMoved: false, hasCaptured: false, lockedPiece: null };
+        let p1CapturedCount = 0; let p2CapturedCount = 0; 
+        const scale = 52; // Adjusted for better fit
+        
+        const logicalNodes = [
+            { id: 0, x: 2, y: -2, p: 1 }, { id: 1, x: 1, y: -1, p: 1 }, { id: 2, x: 2, y: -1, p: 1 }, { id: 3, x: 3, y: -1, p: 1 },
+            { id: 4, x: 0, y: 0, p: 1 }, { id: 5, x: 1, y: 0, p: 1 }, { id: 6, x: 2, y: 0, p: 1 }, { id: 7, x: 3, y: 0, p: 1 }, { id: 8, x: 4, y: 0, p: 1 },
+            { id: 9, x: 0, y: 1, p: 1 }, { id: 10, x: 1, y: 1, p: 1 }, { id: 11, x: 2, y: 1, p: 1 }, { id: 12, x: 3, y: 1, p: 1 }, { id: 13, x: 4, y: 1, p: 1 },
+            { id: 14, x: 0, y: 2, p: 0 }, { id: 15, x: 1, y: 2, p: 0 }, { id: 16, x: 2, y: 2, p: 0 }, { id: 17, x: 3, y: 2, p: 0 }, { id: 18, x: 4, y: 2, p: 0 },
+            { id: 19, x: 0, y: 3, p: 2 }, { id: 20, x: 1, y: 3, p: 2 }, { id: 21, x: 2, y: 3, p: 2 }, { id: 22, x: 3, y: 3, p: 2 }, { id: 23, x: 4, y: 3, p: 2 },
+            { id: 24, x: 0, y: 4, p: 2 }, { id: 25, x: 1, y: 4, p: 2 }, { id: 26, x: 2, y: 4, p: 2 }, { id: 27, x: 3, y: 4, p: 2 }, { id: 28, x: 4, y: 4, p: 2 },
+            { id: 29, x: 1, y: 5, p: 2 }, { id: 30, x: 2, y: 5, p: 2 }, { id: 31, x: 3, y: 5, p: 2 }, { id: 32, x: 2, y: 6, p: 2 }
+        ];
+
+        function setMode(mode) {
+            isAIMode = mode === 'ai';
+            document.getElementById('btn-friend').classList.toggle('active', !isAIMode);
+            document.getElementById('btn-ai').classList.toggle('active', isAIMode);
+            document.getElementById('p2-name').innerText = isAIMode ? "কালো গুটি (Computer)" : "কালো গুটি (Player 2)";
+            resetGame();
+        }
+
+        function hideInstruction() { document.getElementById('instruction-banner').style.display = 'none'; }
+        function toggleRotation(event) { event.stopPropagation(); document.getElementById('p1-card').classList.toggle('rotated'); }
+
+        function isNeighbor(n1, n2) {
+            let dx = Math.abs(n1.x - n2.x); let dy = Math.abs(n1.y - n2.y);
+            if (dx > 1 || dy > 1) return false;
+            if (dx === 1 && dy === 1 && (n1.x + n1.y) % 2 !== 0) return false; 
+            return true;
+        }
+
+        function getJumpedNode(from, to) {
+            let dx = to.x - from.x; let dy = to.y - from.y;
+            if (Math.abs(dx) <= 2 && Math.abs(dy) <= 2 && (Math.abs(dx) === 2 || Math.abs(dy) === 2)) {
+                if (Math.abs(dx) === 2 && Math.abs(dy) === 2 && (from.x + from.y) % 2 !== 0) return null;
+                return nodes.find(n => n.x === from.x + dx / 2 && n.y === from.y + dy / 2);
+            }
+            return null;
+        }
+
+        function resetGame() {
+            const centerX = canvas.width / 2;
+            nodes = logicalNodes.map(n => ({ ...n, px: centerX + (n.x - 2) * scale, py: 40 + (n.y + 2) * scale, piece: n.p }));
+            currentPlayer = 1; selectedNode = null;
+            turnState = { hasMoved: false, hasCaptured: false, lockedPiece: null };
+            p1CapturedCount = 0; p2CapturedCount = 0;
+            updateUI(); drawBoard();
+        }
+
+        function updateUI() {
+            document.getElementById('p1-captured').innerHTML = Array(p1CapturedCount).fill('<div class="eaten-piece eaten-black"></div>').join('');
+            document.getElementById('p2-captured').innerHTML = Array(p2CapturedCount).fill('<div class="eaten-piece eaten-white"></div>').join('');
+            
+            let actionDone = turnState.hasMoved || turnState.hasCaptured;
+            
+            let p1Card = document.getElementById('p1-card'); let p1Msg = document.getElementById('p1-msg');
+            p1Card.className = `player-card ${currentPlayer === 1 ? 'active-turn' : ''} ${currentPlayer === 1 && actionDone ? 'action-done' : ''}`;
+            if(currentPlayer === 1) p1Msg.innerText = actionDone ? "✓ চাল শেষ করতে এখানে ক্লিক করুন" : "আপনার চাল দিন..."; else p1Msg.innerText = "";
+
+            let p2Card = document.getElementById('p2-card'); let p2Msg = document.getElementById('p2-msg');
+            p2Card.className = `player-card ${currentPlayer === 2 ? 'active-turn' : ''} ${currentPlayer === 2 && actionDone && !isAIMode ? 'action-done' : ''}`;
+            if(currentPlayer === 2) p2Msg.innerText = isAIMode ? "কম্পিউটার ভাবছে..." : (actionDone ? "✓ চাল শেষ করতে এখানে ক্লিক করুন" : "আপনার চাল দিন..."); else p2Msg.innerText = "";
+        }
+
+        function attemptEndTurn(playerNum) {
+            if (isAIMode && playerNum === 2) return; // Cannot manual click for AI
+            if (currentPlayer === playerNum && (turnState.hasMoved || turnState.hasCaptured)) {
+                hideInstruction();
+                endTurnLogic();
+            }
+        }
+
+        function endTurnLogic() {
+            let whitePieces = nodes.filter(n => n.piece === 1).length;
+            let blackPieces = nodes.filter(n => n.piece === 2).length;
+            
+            if (whitePieces === 0) { alert(isAIMode ? "কম্পিউটার জিতেছে!" : "কালো গুটি জিতেছে!"); resetGame(); return; }
+            if (blackPieces === 0) { alert("সাদা গুটি জিতেছে!"); resetGame(); return; }
+
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            selectedNode = null;
+            turnState = { hasMoved: false, hasCaptured: false, lockedPiece: null };
+            updateUI(); drawBoard();
+
+            if (isAIMode && currentPlayer === 2) {
+                setTimeout(makeAIMove, 600); // Small delay for realism
+            }
+        }
+
+        // --- HIGH DIFFICULTY AI LOGIC ---
+        function getValidJumps(player) {
+            let jumps = [];
+            let pieces = nodes.filter(n => n.piece === player);
+            pieces.forEach(p => {
+                nodes.filter(n => n.piece === 0).forEach(empty => {
+                    let jumped = getJumpedNode(p, empty);
+                    if (jumped && jumped.piece !== 0 && jumped.piece !== player) {
+                        jumps.push({ from: p, to: empty, eaten: jumped });
+                    }
+                });
+            });
+            return jumps;
+        }
+
+        function getValidMoves(player) {
+            let moves = [];
+            let pieces = nodes.filter(n => n.piece === player);
+            pieces.forEach(p => {
+                nodes.filter(n => n.piece === 0).forEach(empty => {
+                    if (isNeighbor(p, empty)) moves.push({ from: p, to: empty });
+                });
+            });
+            return moves;
+        }
+
+        function makeAIMove() {
+            let jumps = getValidJumps(2);
+            if (jumps.length > 0) {
+                // Perform jump (Prioritize random jump if multiple)
+                let bestJump = jumps[Math.floor(Math.random() * jumps.length)];
+                executeAIMove(bestJump.from, bestJump.to, bestJump.eaten);
+                
+                // Recursive check for multi-jumps
+                let moreJumps = getValidJumps(2).filter(j => j.from === bestJump.to);
+                if (moreJumps.length > 0) {
+                    setTimeout(makeAIMove, 500); // Do another jump
+                    return;
+                }
+            } else {
+                // Normal move (Basic heuristic to avoid immediate capture if possible)
+                let moves = getValidMoves(2);
+                if (moves.length > 0) {
+                    let bestMove = moves[Math.floor(Math.random() * moves.length)];
+                    executeAIMove(bestMove.from, bestMove.to, null);
+                }
+            }
+            
+            setTimeout(endTurnLogic, 500); // AI ends turn
+        }
+
+        function executeAIMove(from, to, eaten) {
+            to.piece = 2; from.piece = 0;
+            if (eaten) { eaten.piece = 0; p2CapturedCount++; }
+            drawBoard();
+        }
+        // --------------------------------
+
+        canvas.addEventListener('pointerdown', (e) => {
+            if (isAIMode && currentPlayer === 2) return; // Block input during AI turn
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
+            const clickY = (e.clientY - rect.top) * (canvas.height / rect.height);
+
+            let clickedNode = nodes.find(n => Math.hypot(n.px - clickX, n.py - clickY) < 20);
+            if (!clickedNode) return;
+
+            if (turnState.hasMoved) return; 
+            if (turnState.hasCaptured && clickedNode.piece !== 0 && clickedNode !== turnState.lockedPiece) return;
+
+            if (selectedNode) {
+                if (clickedNode.piece === 0) {
+                    let jumpedEnemy = getJumpedNode(selectedNode, clickedNode);
+                    if (jumpedEnemy && jumpedEnemy.piece !== 0 && jumpedEnemy.piece !== currentPlayer) {
+                        if (currentPlayer === 1) p1CapturedCount++; else p2CapturedCount++;
+                        clickedNode.piece = currentPlayer; selectedNode.piece = 0; jumpedEnemy.piece = 0;
+                        turnState.hasCaptured = true; turnState.lockedPiece = clickedNode; selectedNode = clickedNode; 
+                        updateUI();
+                    } else if (!turnState.hasCaptured && isNeighbor(selectedNode, clickedNode)) {
+                        clickedNode.piece = currentPlayer; selectedNode.piece = 0;
+                        turnState.hasMoved = true; selectedNode = null; 
+                        updateUI();
+                    }
+                } else if (clickedNode.piece === currentPlayer && !turnState.hasCaptured) {
+                    selectedNode = clickedNode; 
+                }
+            } else {
+                if (clickedNode.piece === currentPlayer) selectedNode = clickedNode;
+            }
+            drawBoard();
+        });
+
+        function drawBoard() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw Board Lines
+            ctx.strokeStyle = "#3e2723"; ctx.lineWidth = 2;
+            for(let i=0; i<nodes.length; i++) {
+                for(let j=i+1; j<nodes.length; j++) {
+                    if(isNeighbor(nodes[i], nodes[j])) {
+                        ctx.beginPath(); ctx.moveTo(nodes[i].px, nodes[i].py); ctx.lineTo(nodes[j].px, nodes[j].py); ctx.stroke();
+                    }
+                }
+            }
+
+            // Draw Carrom Style Pieces
+            nodes.forEach(node => {
+                ctx.beginPath(); ctx.arc(node.px, node.py, 3, 0, Math.PI * 2); ctx.fillStyle = "#5d4037"; ctx.fill(); // Board dots
+                
+                if (node.piece !== 0) {
+                    const radius = 11; // Smaller carrom size
+                    
+                    // Shadow
+                    ctx.beginPath(); ctx.arc(node.px + 2, node.py + 2, radius, 0, Math.PI * 2); 
+                    ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fill();
+
+                    // Main Piece (Outer Edge)
+                    ctx.beginPath(); ctx.arc(node.px, node.py, radius, 0, Math.PI * 2);
+                    ctx.fillStyle = node.piece === 1 ? "#e0ccaa" : "#2c2c2c"; // Wooden Cream vs Black
+                    ctx.fill();
+                    ctx.lineWidth = 1.5; ctx.strokeStyle = node.piece === 1 ? "#a1887f" : "#000"; ctx.stroke();
+
+                    // Inner Carrom Detail Ring
+                    ctx.beginPath(); ctx.arc(node.px, node.py, radius * 0.5, 0, Math.PI * 2);
+                    ctx.lineWidth = 1; ctx.strokeStyle = node.piece === 1 ? "#c0a080" : "#111"; ctx.stroke();
+                    
+                    // Highlight Selection
+                    if (selectedNode === node) { 
+                        ctx.beginPath(); ctx.arc(node.px, node.py, radius + 3, 0, Math.PI * 2);
+                        ctx.lineWidth = 2; ctx.strokeStyle = "#4caf50"; ctx.stroke(); 
+                    }
+                }
+            });
+        }
+
+        resetGame();
+    </script>
+</body>
+</html>
