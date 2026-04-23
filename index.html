@@ -2,78 +2,101 @@
 <html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>১৬ গুটি - AI এবং আসল কাঠের বোর্ড</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>১৬ গুটি - Telegram Mini App</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, sans-serif; user-select: none; }
         
-        body { 
-            background: #3e2723; 
-            background-image: repeating-linear-gradient(45deg, #3e2723 25%, #4e342e 25%, #4e342e 50%, #3e2723 50%, #3e2723 75%, #4e342e 75%, #4e342e 100%);
-            background-size: 40px 40px;
-            color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; padding: 10px; overflow-x: hidden; 
-        }
+        body { background: #3e2723; color: #333; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; overflow: hidden; }
 
-        /* Top Controls */
-        .game-controls { background: #f5f5f5; padding: 10px; border-radius: 8px; border: 2px solid #8d6e63; margin-bottom: 10px; width: 100%; max-width: 380px; display: flex; justify-content: space-around; align-items: center; box-shadow: 0 5px 15px rgba(0,0,0,0.5); }
-        .mode-btn { background: #d7ccc8; border: 2px solid #5d4037; padding: 6px 12px; border-radius: 5px; cursor: pointer; font-weight: bold; color: #3e2723; transition: 0.3s; }
-        .mode-btn.active { background: #4caf50; color: white; border-color: #2e7d32; box-shadow: inset 0 0 5px rgba(0,0,0,0.3); }
+        .screen { display: none; width: 100%; max-width: 380px; padding: 15px; flex-direction: column; align-items: center; justify-content: center; height: 100%; }
+        .screen.active { display: flex; }
 
-        /* Instruction Banner */
-        .instruction-banner { background: rgba(255, 243, 224, 0.95); border: 2px solid #8d6e63; border-radius: 8px; padding: 10px; margin-bottom: 5px; width: 100%; max-width: 380px; text-align: center; font-size: 0.9rem; color: #3e2723; box-shadow: 0 4px 10px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 8px; }
-        .instruction-banner span { color: #2e7d32; font-weight: bold; }
-        .instruction-banner button { background: #5d4037; color: #fff; border: none; padding: 6px 15px; border-radius: 5px; cursor: pointer; font-weight: bold; align-self: center; }
+        .title { color: #f5f5f5; font-size: 2rem; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.5); }
+        .mode-btn { background: #d7ccc8; border: 2px solid #5d4037; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; font-size: 1.1rem; color: #3e2723; margin: 10px 0; width: 100%; transition: 0.2s; }
+        .mode-btn.selected { background: #4caf50; color: white; border-color: #2e7d32; }
+        .start-btn { background: #ff9800; color: white; border: none; padding: 15px; width: 100%; border-radius: 8px; font-size: 1.2rem; font-weight: bold; margin-top: 20px; cursor: pointer; display: none; }
+        .start-btn.show { display: block; }
 
-        /* Player Cards */
-        .player-card { background: #f5f5f5; border: 3px solid #8d6e63; border-radius: 10px; padding: 12px; width: 100%; max-width: 380px; text-align: center; margin: 5px 0; transition: all 0.3s ease; box-shadow: 0 5px 10px rgba(0,0,0,0.6); position: relative; }
-        .player-card.active-turn { background: #4caf50; border-color: #2e7d32; color: #fff; box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); }
-        .player-card.action-done { cursor: pointer; animation: pulseCard 1.5s infinite; }
+        .inst-box { background: rgba(255, 243, 224, 0.95); border: 2px solid #8d6e63; border-radius: 8px; padding: 20px; text-align: center; font-size: 1.1rem; color: #3e2723; margin-bottom: 20px; line-height: 1.5; }
+        .inst-box span { color: #2e7d32; font-weight: bold; }
+        .ok-btn { background: #4caf50; color: #fff; border: none; padding: 12px 30px; border-radius: 5px; cursor: pointer; font-weight: bold; font-size: 1.1rem; width: 100%; }
 
-        @keyframes pulseCard { 0% { transform: scale(1); } 50% { transform: scale(1.02); box-shadow: 0 0 20px rgba(76, 175, 80, 1); } 100% { transform: scale(1); } }
+        .player-card { background: #f5f5f5; border: 2px solid #8d6e63; border-radius: 6px; padding: 6px 10px; width: 100%; text-align: center; margin: 3px 0; transition: background-color 0.2s; position: relative; }
+        .player-card.active-turn { background: #4caf50; border-color: #2e7d32; color: #fff; }
+        .player-card.action-done { background: #ffeb3b; color: #333; cursor: pointer; border-color: #fbc02d; }
         .rotated { transform: rotate(180deg); }
         
-        .card-header { font-size: 1.2rem; font-weight: bold; margin-bottom: 5px; }
-        .instruction-text { font-size: 0.85rem; margin-top: 5px; font-weight: bold; min-height: 18px; }
+        .card-header { font-size: 1rem; font-weight: bold; }
+        .instruction-text { font-size: 0.8rem; font-weight: bold; min-height: 15px; margin-top: 2px; }
 
-        .rotate-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); padding: 5px; border-radius: 6px; margin-bottom: 5px; font-size: 0.8rem; }
-        .btn-rotate { background: #fff; border: 1px solid #333; color: #333; padding: 3px 8px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .rotate-bar { display: flex; justify-content: space-between; align-items: center; background: rgba(0,0,0,0.1); padding: 3px 5px; border-radius: 4px; margin-bottom: 3px; font-size: 0.75rem; }
+        .btn-rotate { background: #fff; border: 1px solid #333; color: #333; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-weight: bold; font-size: 0.7rem; }
 
-        .captured-area { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; min-height: 18px; margin-top: 5px; padding: 4px; background: rgba(0,0,0,0.1); border-radius: 4px; }
-        .eaten-piece { width: 12px; height: 12px; border-radius: 50%; box-shadow: 1px 1px 2px rgba(0,0,0,0.5); }
+        .captured-area { display: flex; flex-wrap: wrap; gap: 2px; justify-content: center; min-height: 12px; margin-top: 3px; }
+        .eaten-piece { width: 10px; height: 10px; border-radius: 50%; }
         .eaten-white { background: #e0ccaa; border: 1px solid #8d6e63; }
         .eaten-black { background: #2c2c2c; border: 1px solid #000; }
 
-        canvas { background: #d7ccc8; border: 6px solid #5d4037; border-radius: 8px; box-shadow: inset 0 0 20px rgba(0,0,0,0.3); width: 100%; max-width: 380px; height: auto; touch-action: none; margin: 5px 0; }
+        canvas { background: #d7ccc8; border: 4px solid #5d4037; border-radius: 6px; width: 100%; max-width: 380px; height: auto; touch-action: none; margin: 2px 0; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; backdrop-filter: blur(3px); }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: #fff3e0; padding: 25px 20px; border-radius: 12px; text-align: center; border: 4px solid #8d6e63; width: 85%; max-width: 320px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); animation: popIn 0.3s ease-out; }
+        @keyframes popIn { from { transform: scale(0.8); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+        
+        .winner-title { font-size: 1.5rem; font-weight: bold; color: #d84315; margin-bottom: 15px; }
+        .modal-btn { padding: 12px; border: none; border-radius: 8px; font-weight: bold; font-size: 1.1rem; width: 100%; margin-bottom: 10px; cursor: pointer; transition: 0.2s; }
+        .btn-play-again { background: #4caf50; color: #fff; border: 2px solid #2e7d32; }
+        .btn-play-again:active { background: #388e3c; }
+        .btn-home { background: #6d4c41; color: #fff; border: 2px solid #4e342e; }
+        .btn-home:active { background: #5d4037; }
     </style>
 </head>
 <body>
 
-    <div class="game-controls">
-        <button id="btn-friend" class="mode-btn active" onclick="setMode('friend')">বন্ধুর সাথে</button>
-        <button id="btn-ai" class="mode-btn" onclick="setMode('ai')">কম্পিউটারের সাথে</button>
+    <div id="screen-start" class="screen active">
+        <h1 class="title">১৬ গুটি</h1>
+        <button id="btn-friend" class="mode-btn" onclick="selectMode('friend')">বন্ধুর সাথে</button>
+        <button id="btn-ai" class="mode-btn" onclick="selectMode('ai')">কম্পিউটারের সাথে</button>
+        <button id="btn-start-now" class="start-btn" onclick="goToScreen('screen-instruction')">Start Now</button>
     </div>
 
-    <div id="instruction-banner" class="instruction-banner">
-        <strong>নিয়ম:</strong> চাল দেওয়া শেষ হলে <span>সবুজ আইডি কার্ডে</span> ক্লিক করুন।
-        <button onclick="hideInstruction()">বুঝতে পেরেছি</button>
-    </div>
-
-    <div id="p1-card" class="player-card" onclick="attemptEndTurn(1)">
-        <div class="rotate-bar">
-            <span>কার্ডটি ঘোরাতে ক্লিক করুন ➔</span>
-            <button class="btn-rotate" onclick="toggleRotation(event)">🔄 Rotate</button>
+    <div id="screen-instruction" class="screen">
+        <div class="inst-box">
+            <strong>খেলার নিয়ম:</strong><br><br>
+            আপনার গুটির চাল দেওয়া শেষ হলে <span>রঙিন আইডি কার্ডে</span> ক্লিক করে চাল সম্পন্ন করুন।<br>
+            প্রতিপক্ষের গুটি খেতে গুটির উপর দিয়ে লাফ দিন।
         </div>
-        <div class="card-header">সাদা গুটি (Player 1)</div>
-        <div id="p1-captured" class="captured-area"></div>
-        <div id="p1-msg" class="instruction-text">আপনার চাল দিন...</div>
+        <button class="ok-btn" onclick="startGame()">OK</button>
     </div>
 
-    <canvas id="gameBoard" width="360" height="540"></canvas>
+    <div id="screen-game" class="screen">
+        <div id="p1-card" class="player-card" onclick="attemptEndTurn(1)">
+            <div class="rotate-bar">
+                <span>কার্ডটি ঘোরাতে ➔</span>
+                <button class="btn-rotate" onclick="toggleRotation(event)">🔄 Rotate</button>
+            </div>
+            <div class="card-header">সাদা গুটি (Player 1)</div>
+            <div id="p1-captured" class="captured-area"></div>
+            <div id="p1-msg" class="instruction-text">আপনার চাল দিন...</div>
+        </div>
 
-    <div id="p2-card" class="player-card" onclick="attemptEndTurn(2)">
-        <div class="card-header" id="p2-name">কালো গুটি (Player 2)</div>
-        <div id="p2-captured" class="captured-area"></div>
-        <div id="p2-msg" class="instruction-text"></div>
+        <canvas id="gameBoard" width="360" height="480"></canvas>
+
+        <div id="p2-card" class="player-card" onclick="attemptEndTurn(2)">
+            <div class="card-header" id="p2-name">কালো গুটি (Player 2)</div>
+            <div id="p2-captured" class="captured-area"></div>
+            <div id="p2-msg" class="instruction-text"></div>
+        </div>
+    </div>
+
+    <div id="winner-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="winner-text" class="winner-title">সাদা গুটি জিতেছে! 🎉</div>
+            <button class="modal-btn btn-play-again" onclick="playAgain()">আবার খেলুন</button>
+            <button class="modal-btn btn-home" onclick="goHome()">হোমে ফিরে যান</button>
+        </div>
     </div>
 
     <script>
@@ -82,11 +105,12 @@
         
         let isAIMode = false;
         let nodes = [];
-        let currentPlayer = 1; // 1 = White, 2 = Black
+        let currentPlayer = 1; 
         let selectedNode = null;
         let turnState = { hasMoved: false, hasCaptured: false, lockedPiece: null };
         let p1CapturedCount = 0; let p2CapturedCount = 0; 
-        const scale = 52; // Adjusted for better fit
+        let gameActive = false;
+        const scale = 45; 
         
         const logicalNodes = [
             { id: 0, x: 2, y: -2, p: 1 }, { id: 1, x: 1, y: -1, p: 1 }, { id: 2, x: 2, y: -1, p: 1 }, { id: 3, x: 3, y: -1, p: 1 },
@@ -98,16 +122,45 @@
             { id: 29, x: 1, y: 5, p: 2 }, { id: 30, x: 2, y: 5, p: 2 }, { id: 31, x: 3, y: 5, p: 2 }, { id: 32, x: 2, y: 6, p: 2 }
         ];
 
-        function setMode(mode) {
+        function goToScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        function selectMode(mode) {
             isAIMode = mode === 'ai';
-            document.getElementById('btn-friend').classList.toggle('active', !isAIMode);
-            document.getElementById('btn-ai').classList.toggle('active', isAIMode);
+            document.getElementById('btn-friend').classList.toggle('selected', !isAIMode);
+            document.getElementById('btn-ai').classList.toggle('selected', isAIMode);
+            document.getElementById('btn-start-now').classList.add('show');
             document.getElementById('p2-name').innerText = isAIMode ? "কালো গুটি (Computer)" : "কালো গুটি (Player 2)";
+        }
+
+        function startGame() {
+            goToScreen('screen-game');
             resetGame();
         }
 
-        function hideInstruction() { document.getElementById('instruction-banner').style.display = 'none'; }
+        function playAgain() {
+            document.getElementById('winner-modal').classList.remove('active');
+            resetGame();
+        }
+
+        function goHome() {
+            document.getElementById('winner-modal').classList.remove('active');
+            gameActive = false;
+            document.getElementById('btn-start-now').classList.remove('show');
+            document.getElementById('btn-friend').classList.remove('selected');
+            document.getElementById('btn-ai').classList.remove('selected');
+            goToScreen('screen-start');
+        }
+
         function toggleRotation(event) { event.stopPropagation(); document.getElementById('p1-card').classList.toggle('rotated'); }
+
+        function showWinner(message) {
+            gameActive = false;
+            document.getElementById('winner-text').innerText = message;
+            document.getElementById('winner-modal').classList.add('active');
+        }
 
         function isNeighbor(n1, n2) {
             let dx = Math.abs(n1.x - n2.x); let dy = Math.abs(n1.y - n2.y);
@@ -125,56 +178,6 @@
             return null;
         }
 
-        function resetGame() {
-            const centerX = canvas.width / 2;
-            nodes = logicalNodes.map(n => ({ ...n, px: centerX + (n.x - 2) * scale, py: 40 + (n.y + 2) * scale, piece: n.p }));
-            currentPlayer = 1; selectedNode = null;
-            turnState = { hasMoved: false, hasCaptured: false, lockedPiece: null };
-            p1CapturedCount = 0; p2CapturedCount = 0;
-            updateUI(); drawBoard();
-        }
-
-        function updateUI() {
-            document.getElementById('p1-captured').innerHTML = Array(p1CapturedCount).fill('<div class="eaten-piece eaten-black"></div>').join('');
-            document.getElementById('p2-captured').innerHTML = Array(p2CapturedCount).fill('<div class="eaten-piece eaten-white"></div>').join('');
-            
-            let actionDone = turnState.hasMoved || turnState.hasCaptured;
-            
-            let p1Card = document.getElementById('p1-card'); let p1Msg = document.getElementById('p1-msg');
-            p1Card.className = `player-card ${currentPlayer === 1 ? 'active-turn' : ''} ${currentPlayer === 1 && actionDone ? 'action-done' : ''}`;
-            if(currentPlayer === 1) p1Msg.innerText = actionDone ? "✓ চাল শেষ করতে এখানে ক্লিক করুন" : "আপনার চাল দিন..."; else p1Msg.innerText = "";
-
-            let p2Card = document.getElementById('p2-card'); let p2Msg = document.getElementById('p2-msg');
-            p2Card.className = `player-card ${currentPlayer === 2 ? 'active-turn' : ''} ${currentPlayer === 2 && actionDone && !isAIMode ? 'action-done' : ''}`;
-            if(currentPlayer === 2) p2Msg.innerText = isAIMode ? "কম্পিউটার ভাবছে..." : (actionDone ? "✓ চাল শেষ করতে এখানে ক্লিক করুন" : "আপনার চাল দিন..."); else p2Msg.innerText = "";
-        }
-
-        function attemptEndTurn(playerNum) {
-            if (isAIMode && playerNum === 2) return; // Cannot manual click for AI
-            if (currentPlayer === playerNum && (turnState.hasMoved || turnState.hasCaptured)) {
-                hideInstruction();
-                endTurnLogic();
-            }
-        }
-
-        function endTurnLogic() {
-            let whitePieces = nodes.filter(n => n.piece === 1).length;
-            let blackPieces = nodes.filter(n => n.piece === 2).length;
-            
-            if (whitePieces === 0) { alert(isAIMode ? "কম্পিউটার জিতেছে!" : "কালো গুটি জিতেছে!"); resetGame(); return; }
-            if (blackPieces === 0) { alert("সাদা গুটি জিতেছে!"); resetGame(); return; }
-
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
-            selectedNode = null;
-            turnState = { hasMoved: false, hasCaptured: false, lockedPiece: null };
-            updateUI(); drawBoard();
-
-            if (isAIMode && currentPlayer === 2) {
-                setTimeout(makeAIMove, 600); // Small delay for realism
-            }
-        }
-
-        // --- HIGH DIFFICULTY AI LOGIC ---
         function getValidJumps(player) {
             let jumps = [];
             let pieces = nodes.filter(n => n.piece === player);
@@ -200,32 +203,158 @@
             return moves;
         }
 
-        function makeAIMove() {
+        // ইনস্ট্যান্ট উইন চেক (যেকোনো অ্যাকশনের পর)
+        function checkInstantWin() {
+            let whiteCount = nodes.filter(n => n.piece === 1).length;
+            let blackCount = nodes.filter(n => n.piece === 2).length;
+            
+            if (whiteCount === 0) {
+                showWinner(isAIMode ? "কম্পিউটার জিতেছে! 💻" : "কালো গুটি জিতেছে! 🎉");
+                return true;
+            }
+            if (blackCount === 0) {
+                showWinner("সাদা গুটি জিতেছে! 🎉");
+                return true;
+            }
+            return false;
+        }
+
+        function resetGame() {
+            const centerX = canvas.width / 2;
+            nodes = logicalNodes.map(n => ({ ...n, px: centerX + (n.x - 2) * scale, py: 30 + (n.y + 2) * scale, piece: n.p }));
+            currentPlayer = 1; selectedNode = null;
+            turnState = { hasMoved: false, hasCaptured: false, lockedPiece: null };
+            p1CapturedCount = 0; p2CapturedCount = 0;
+            gameActive = true;
+            updateUI(); drawBoard();
+        }
+
+        function updateUI() {
+            document.getElementById('p1-captured').innerHTML = Array(p1CapturedCount).fill('<div class="eaten-piece eaten-black"></div>').join('');
+            document.getElementById('p2-captured').innerHTML = Array(p2CapturedCount).fill('<div class="eaten-piece eaten-white"></div>').join('');
+            
+            let actionDone = turnState.hasMoved || turnState.hasCaptured;
+            
+            let p1Card = document.getElementById('p1-card'); let p1Msg = document.getElementById('p1-msg');
+            p1Card.className = `player-card ${currentPlayer === 1 ? 'active-turn' : ''} ${currentPlayer === 1 && actionDone ? 'action-done' : ''}`;
+            if(currentPlayer === 1) p1Msg.innerText = actionDone ? "✓ চাল শেষ করতে এখানে ক্লিক করুন" : "আপনার চাল দিন..."; else p1Msg.innerText = "";
+
+            let p2Card = document.getElementById('p2-card'); let p2Msg = document.getElementById('p2-msg');
+            p2Card.className = `player-card ${currentPlayer === 2 ? 'active-turn' : ''} ${currentPlayer === 2 && actionDone && !isAIMode ? 'action-done' : ''}`;
+            if(currentPlayer === 2) p2Msg.innerText = isAIMode ? "কম্পিউটার ভাবছে..." : (actionDone ? "✓ চাল শেষ করতে এখানে ক্লিক করুন" : "আপনার চাল দিন..."); else p2Msg.innerText = "";
+        }
+
+        function attemptEndTurn(playerNum) {
+            if (!gameActive || (isAIMode && playerNum === 2)) return; 
+            if (currentPlayer === playerNum && (turnState.hasMoved || turnState.hasCaptured)) {
+                endTurnLogic();
+            }
+        }
+
+        function endTurnLogic() {
+            // ব্লক (Blockage) চেক
+            let nextPlayer = currentPlayer === 1 ? 2 : 1;
+            let moves = getValidMoves(nextPlayer);
+            let jumps = getValidJumps(nextPlayer);
+            
+            if (moves.length === 0 && jumps.length === 0) {
+                if (currentPlayer === 1) showWinner("সাদা গুটি জিতেছে! 🎉 (ব্লক)");
+                else showWinner(isAIMode ? "কম্পিউটার জিতেছে! 💻 (ব্লক)" : "কালো গুটি জিতেছে! 🎉 (ব্লক)");
+                return;
+            }
+
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            selectedNode = null;
+            turnState = { hasMoved: false, hasCaptured: false, lockedPiece: null };
+            updateUI(); drawBoard();
+
+            if (isAIMode && currentPlayer === 2 && gameActive) {
+                setTimeout(() => makeAIMove(), 900);
+            }
+        }
+
+        // --- SMART AI LOGIC (Hard Mode) ---
+        function getSmartAIMove(forcedStartNode = null) {
             let jumps = getValidJumps(2);
+            if (forcedStartNode) jumps = jumps.filter(j => j.from === forcedStartNode);
+
+            // যদি লাফ দেওয়ার অপশন থাকে
             if (jumps.length > 0) {
-                // Perform jump (Prioritize random jump if multiple)
-                let bestJump = jumps[Math.floor(Math.random() * jumps.length)];
-                executeAIMove(bestJump.from, bestJump.to, bestJump.eaten);
+                let bestJump = jumps[0];
+                let bestScore = -Infinity;
                 
-                // Recursive check for multi-jumps
-                let moreJumps = getValidJumps(2).filter(j => j.from === bestJump.to);
-                if (moreJumps.length > 0) {
-                    setTimeout(makeAIMove, 500); // Do another jump
-                    return;
+                for (let j of jumps) {
+                    // সিমিউলেশন: লাফ দিলে কি হবে
+                    j.to.piece = 2; j.from.piece = 0; let eatenOrig = j.eaten.piece; j.eaten.piece = 0;
+                    
+                    let oppJumps = getValidJumps(1);
+                    let score = 100 - (oppJumps.length * 50); // ফাঁদে পা না দেওয়ার চেষ্টা
+                    
+                    if (score > bestScore) { bestScore = score; bestJump = j; }
+                    
+                    // আগের অবস্থায় ফেরত
+                    j.to.piece = 0; j.from.piece = 2; j.eaten.piece = eatenOrig;
                 }
-            } else {
-                // Normal move (Basic heuristic to avoid immediate capture if possible)
-                let moves = getValidMoves(2);
-                if (moves.length > 0) {
-                    let bestMove = moves[Math.floor(Math.random() * moves.length)];
-                    executeAIMove(bestMove.from, bestMove.to, null);
+                return { type: 'jump', move: bestJump };
+            }
+
+            if (forcedStartNode) return null;
+
+            // যদি লাফ দেওয়ার অপশন না থাকে
+            let moves = getValidMoves(2);
+            if (moves.length === 0) return null;
+
+            let bestMoves = [];
+            let bestScore = -Infinity;
+
+            for (let m of moves) {
+                m.to.piece = 2; m.from.piece = 0;
+                
+                let oppJumps = getValidJumps(1); // প্লেয়ার কি লাফ দিতে পারবে?
+                let myNextJumps = getValidJumps(2);
+                
+                let score = 0;
+                if (oppJumps.length > 0) score -= oppJumps.length * 1000; // সুইসাইড চাল থেকে বিরত থাকা
+                score += myNextJumps.length * 50; // ভবিষ্যৎ অ্যাটাকের প্রস্তুতি
+                if (m.to.id >= 4 && m.to.id <= 13) score += 5; // সেন্টারে থাকার চেষ্টা
+
+                m.to.piece = 0; m.from.piece = 2;
+
+                if (score > bestScore) {
+                    bestScore = score;
+                    bestMoves = [m];
+                } else if (score === bestScore) {
+                    bestMoves.push(m);
                 }
             }
             
-            setTimeout(endTurnLogic, 500); // AI ends turn
+            let finalMove = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+            return { type: 'move', move: finalMove };
         }
 
-        function executeAIMove(from, to, eaten) {
+        function makeAIMove(forcedStartNode = null) {
+            if(!gameActive) return;
+
+            let action = getSmartAIMove(forcedStartNode);
+
+            if (action && action.type === 'jump') {
+                executeAIAction(action.move.from, action.move.to, action.move.eaten);
+                if (!checkInstantWin()) { // উইন চেক
+                    let moreJumps = getValidJumps(2).filter(j => j.from === action.move.to);
+                    if (moreJumps.length > 0) {
+                        setTimeout(() => makeAIMove(action.move.to), 500); 
+                        return;
+                    }
+                }
+            } else if (action && action.type === 'move') {
+                executeAIAction(action.move.from, action.move.to, null);
+                checkInstantWin();
+            }
+            
+            if(gameActive) setTimeout(endTurnLogic, 500);
+        }
+
+        function executeAIAction(from, to, eaten) {
             to.piece = 2; from.piece = 0;
             if (eaten) { eaten.piece = 0; p2CapturedCount++; }
             drawBoard();
@@ -233,7 +362,7 @@
         // --------------------------------
 
         canvas.addEventListener('pointerdown', (e) => {
-            if (isAIMode && currentPlayer === 2) return; // Block input during AI turn
+            if (!gameActive || (isAIMode && currentPlayer === 2)) return; 
 
             const rect = canvas.getBoundingClientRect();
             const clickX = (e.clientX - rect.left) * (canvas.width / rect.width);
@@ -252,7 +381,10 @@
                         if (currentPlayer === 1) p1CapturedCount++; else p2CapturedCount++;
                         clickedNode.piece = currentPlayer; selectedNode.piece = 0; jumpedEnemy.piece = 0;
                         turnState.hasCaptured = true; turnState.lockedPiece = clickedNode; selectedNode = clickedNode; 
+                        
                         updateUI();
+                        if (checkInstantWin()) return; // তাৎক্ষণিক উইন চেক
+
                     } else if (!turnState.hasCaptured && isNeighbor(selectedNode, clickedNode)) {
                         clickedNode.piece = currentPlayer; selectedNode.piece = 0;
                         turnState.hasMoved = true; selectedNode = null; 
@@ -270,7 +402,6 @@
         function drawBoard() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw Board Lines
             ctx.strokeStyle = "#3e2723"; ctx.lineWidth = 2;
             for(let i=0; i<nodes.length; i++) {
                 for(let j=i+1; j<nodes.length; j++) {
@@ -280,28 +411,16 @@
                 }
             }
 
-            // Draw Carrom Style Pieces
             nodes.forEach(node => {
-                ctx.beginPath(); ctx.arc(node.px, node.py, 3, 0, Math.PI * 2); ctx.fillStyle = "#5d4037"; ctx.fill(); // Board dots
+                ctx.beginPath(); ctx.arc(node.px, node.py, 3, 0, Math.PI * 2); ctx.fillStyle = "#5d4037"; ctx.fill(); 
                 
                 if (node.piece !== 0) {
-                    const radius = 11; // Smaller carrom size
-                    
-                    // Shadow
-                    ctx.beginPath(); ctx.arc(node.px + 2, node.py + 2, radius, 0, Math.PI * 2); 
-                    ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fill();
-
-                    // Main Piece (Outer Edge)
+                    const radius = 12; 
                     ctx.beginPath(); ctx.arc(node.px, node.py, radius, 0, Math.PI * 2);
-                    ctx.fillStyle = node.piece === 1 ? "#e0ccaa" : "#2c2c2c"; // Wooden Cream vs Black
+                    ctx.fillStyle = node.piece === 1 ? "#e0ccaa" : "#2c2c2c"; 
                     ctx.fill();
-                    ctx.lineWidth = 1.5; ctx.strokeStyle = node.piece === 1 ? "#a1887f" : "#000"; ctx.stroke();
-
-                    // Inner Carrom Detail Ring
-                    ctx.beginPath(); ctx.arc(node.px, node.py, radius * 0.5, 0, Math.PI * 2);
-                    ctx.lineWidth = 1; ctx.strokeStyle = node.piece === 1 ? "#c0a080" : "#111"; ctx.stroke();
+                    ctx.lineWidth = 1.5; ctx.strokeStyle = node.piece === 1 ? "#8d6e63" : "#000"; ctx.stroke();
                     
-                    // Highlight Selection
                     if (selectedNode === node) { 
                         ctx.beginPath(); ctx.arc(node.px, node.py, radius + 3, 0, Math.PI * 2);
                         ctx.lineWidth = 2; ctx.strokeStyle = "#4caf50"; ctx.stroke(); 
@@ -309,8 +428,6 @@
                 }
             });
         }
-
-        resetGame();
     </script>
 </body>
 </html>
